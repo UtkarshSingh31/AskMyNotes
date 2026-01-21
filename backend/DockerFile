@@ -1,0 +1,39 @@
+# 1. Use Python 3.12
+FROM python:3.11-slim
+
+# 2. Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    HOME=/home/user
+
+# 3. Create a non-root user (Hugging Face Requirement)
+RUN useradd -m -u 1000 user
+USER user
+WORKDIR $HOME/app
+
+# 4. Install system dependencies
+# We need these for FAISS and PDF processing
+USER root
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libmagic1 \
+    && rm -rf /var/lib/apt/lists/*
+USER user
+
+# 5. Copy ONLY the backend requirements first
+# This keeps the build fast
+COPY --chown=user backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# 6. Copy the REST of the backend folder into the container
+# Note: We copy the *contents* of backend/ into the current directory
+COPY --chown=user backend/ .
+
+# 7. Hugging Face expects port 7860
+EXPOSE 7860
+
+# 8. Start the app
+# Since we copied the contents of backend/ into $HOME/app,
+# api.py is now at the top level inside the container.
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]
