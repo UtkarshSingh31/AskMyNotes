@@ -17,10 +17,7 @@ rag_service = RAGService(data_path=DATA_DIR)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global rag_service
-    rag_service = RAGService(data_path=DATA_DIR)
     yield
-    rag_service = None
 
 
 app = FastAPI(

@@ -10,9 +10,15 @@ DATA_DIR = BASE_DIR / "data"
 class RAGService:
     def __init__(self, data_path: Path):
         self.data_path = data_path 
-        self._build()
+        self.retriever=None
 
     def _build(self):
+
+        if not any(self.data_path.iterdir()):
+            print("Data directory is empty. Skipping build")
+            return
+        
+
         documents = load_documents(self.data_path)
 
         if not documents:
@@ -24,6 +30,9 @@ class RAGService:
     
     def query(self, question: str):
 
+        if not self.retriever:
+            self._build()
+            
         if not self.retriever:
             raise  RuntimeError("No documents indexed yet.")
         
